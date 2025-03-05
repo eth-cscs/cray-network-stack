@@ -47,7 +47,7 @@ RUN git clone https://github.com/HewlettPackard/shs-cassini-headers.git \
     && cd .. \
     && rm -r shs-cassini-headers
 
-ARG cxi_driver_ref=caa8bf41a25817111f137bb7e8be1e45c4e6758f
+ARG cxi_driver_ref=af5d2ed4114134ea4eaf095d16af619573729045
 RUN git clone https://github.com/HewlettPackard/shs-cxi-driver.git \
     && cd shs-cxi-driver \
     && git checkout ${cxi_ddriver_ref} \
@@ -55,7 +55,7 @@ RUN git clone https://github.com/HewlettPackard/shs-cxi-driver.git \
     && cd .. \
     && rm -r shs-cxi-driver
 
-ARG libcxi_ref=31a183b521d1da670574e2a1bf59a91cb579b105
+ARG libcxi_ref=3a33b3966d2898ab129458c8813b0cbcdcec06f5
 RUN git clone https://github.com/HewlettPackard/shs-libcxi.git \
     && cd shs-libcxi \
     && git checkout ${libcxi_ref} \
@@ -69,7 +69,7 @@ RUN git clone https://github.com/HewlettPackard/shs-libcxi.git \
 
 # Install libfabric
 ARG libfabric_version=2.0.0
-ARG libfabric_ref=36b974dc27c67fd0268e0ab575fd01592f756992
+ARG libfabric_ref=c17230da527aada634e0cc50d9feafc83d7106ce
 # Libfabric 2.0.0 seems to have a bug preventing compilation of the CXI provider, using main branch for now
 RUN git clone --branch main --single-branch https://github.com/ofiwg/libfabric.git \
     && cd libfabric \
