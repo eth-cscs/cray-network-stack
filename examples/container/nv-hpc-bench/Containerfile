@@ -32,7 +32,6 @@ RUN apt-get update \
         --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-
 ARG GDRCOPY_VER=2.4.4
 RUN git clone --depth 1 --branch v${GDRCOPY_VER} https://github.com/NVIDIA/gdrcopy.git \
     && cd gdrcopy \
