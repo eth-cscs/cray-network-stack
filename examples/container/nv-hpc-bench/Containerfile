@@ -1,8 +1,5 @@
 FROM docker.io/nvidia/cuda:12.8.0-devel-ubuntu24.04
 
-ARG OMPI_VER=5.0.6
-ARG GDRCOPY_VER=2.4.4
-
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive \
        apt-get install -y \
@@ -23,7 +20,6 @@ RUN apt-get update \
         numactl \
         libconfig-dev \
         libuv1-dev \
-        libucx-dev \
         libfuse-dev \
         libfuse3-dev \
         libyaml-dev \
@@ -36,6 +32,7 @@ RUN apt-get update \
         --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+ARG GDRCOPY_VER=2.4.4
 RUN git clone --depth 1 -b v${GDRCOPY_VER} https://github.com/NVIDIA/gdrcopy.git && \
     cd gdrcopy && \
     export CUDA_PATH=${CUDA_HOME:-$(echo $(which nvcc) | grep -o '.*cuda')} && \
@@ -80,11 +77,25 @@ RUN git clone --depth 1 --branch ${libfabric_version} https://github.com/ofiwg/l
     && cd .. \
     && rm -rf libfabric
 
+# Install UCX
+ARG UCX_VERSION=1.18.0
+RUN wget https://github.com/openucx/ucx/releases/download/v${UCX_VERSION}/ucx-${UCX_VERSION}.tar.gz \
+    && tar xzf ucx-${UCX_VERSION}.tar.gz \
+    && cd ucx-${UCX_VERSION} \
+    && mkdir build \
+    && cd build \
+    && ../configure --prefix=/usr --with-cuda=/usr/local/cuda --with-gdrcopy=/usr/local --enable-mt --enable-devel-headers \
+    && make -j$(nproc) \
+    && make install \
+    && cd ../.. \
+    && rm -rf ucx-${UCX_VERSION}.tar.gz ucx-${UCX_VERSION}
+
 # Install OpenMPI
+ARG OMPI_VER=5.0.6
 RUN wget -q https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-${OMPI_VER}.tar.gz \
     && tar xf openmpi-${OMPI_VER}.tar.gz \
     && cd openmpi-${OMPI_VER} \
-    && ./configure --with-ofi=/usr --with-gdrcopy=/usr/local --prefix=/usr --with-cxi --with-slingshot --enable-oshmem \
+    && ./configure --prefix=/usr --with-ofi=/usr --with-ucx=/usr --with-gdrcopy=/usr/local --with-cxi --with-slingshot --enable-oshmem \
        --with-cuda=/usr/local/cuda --with-cuda-libdir=/usr/local/cuda/lib64/stubs \
     && make -j$(nproc) \
     && make install \
