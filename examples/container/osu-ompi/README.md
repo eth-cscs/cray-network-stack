@@ -5,8 +5,11 @@ Self-sufficient container image with OSU Micro-Benchmarks built on OpenMPI 5 wit
 ## Notes (see also EDF TOML for reference)
 - The image does not require hooks to inject a custom CXI stack from the host
 - Interaction with host PMIx needs to be understood better: environment variables for PSEC and GDS parameters have to be set on Alps to prevent warnings and crashes due to missing components
-- Running a container reuires a hook for bridging the PMIx interface between host and container
+- Running a container requires a hook for bridging the PMIx interface between host and container
 - The image includes also the libfabric LINKx provider for experimentation.
+- Two variants of the Containerfile are provided:
+    1. An extended one with explicit build instructions for all the software components besides CUDA.
+    2. A short one using other images from this Git repository as base, for a more modular approach.
 
 ## Examples
 
