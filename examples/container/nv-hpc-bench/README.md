@@ -5,10 +5,13 @@ Self-sufficient container image with pre-compiled [NVIDIA HPC Benchmarks](https:
 ## Notes
 
 - The image does not require hooks to inject a custom CXI stack from the host
-- Running a container reuires a hook for bridging the PMIx interface between host and container
-- The image installs UCX from the package manager so that OpenSHMEM can be built. OpenSHMEM is in turn a dependency for NVSHMEM
+- Running a container requires a hook for bridging the PMIx interface between host and container
+- The image installs the UCX communication framework so that OpenSHMEM can be built. OpenSHMEM is in turn a dependency for NVSHMEM
 - NVSHMEM is rebuilt from source because the build bundled with the benchmarks incurs in a segmentation fault when using its libfabric backend; NVSHMEM 2.11.0 is used instead of more recent 3.x releases to respect the dynamic linking by benchmark executables
 - The image includes also the libfabric LINKx provider for experimentation.
+- Two variants of the Containerfile are provided:
+    1. An extended one with explicit build instructions for all the software components besides CUDA.
+    2. A short one using other images from this Git repository as base, for a more modular approach.
 
 
 ## Examples
