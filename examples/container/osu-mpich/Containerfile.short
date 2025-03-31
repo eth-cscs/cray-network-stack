@@ -1,0 +1,17 @@
+FROM quay.io/ethcscs/mpich:4.3.0-cxi-ofi2.1-cuda12.8
+
+RUN wget -q http://mvapich.cse.ohio-state.edu/download/mvapich/osu-micro-benchmarks-7.5.tar.gz \
+    && tar xf osu-micro-benchmarks-7.5.tar.gz \
+    && cd osu-micro-benchmarks-7.5 \
+    && ldconfig /usr/local/cuda/targets/sbsa-linux/lib/stubs \
+    && ./configure --prefix=/usr/local CC=$(which mpicc) CFLAGS="-O3 -lcuda -lnvidia-ml" \
+                   --enable-cuda --with-cuda-include=/usr/local/cuda/include \
+                   --with-cuda-libpath=/usr/local/cuda/lib64 \
+                   CXXFLAGS="-lmpi -lcuda" \
+    && make -j$(nproc) \
+    && make install \
+    && ldconfig \
+    && cd .. \
+    && rm -rf osu-micro-benchmarks-7.5 osu-micro-benchmarks-7.5.tar.gz
+
+WORKDIR /usr/local/libexec/osu-micro-benchmarks/mpi
