@@ -6,7 +6,7 @@ Slingshot connectivity is enabled through user-space CXI software components, wh
 
 This image is not intended to be used on its own, but to serve as a base to build higher-level software (e.g. MPI implementations) and application stacks.
 
-Builds of the image are currently hosted on the Quay.io registry at https://quay.io/repository/ethcscs/comm-fwk.
+Builds of the image are currently hosted on the Quay.io registry at https://quay.io/repository/ethcscs/comm-fwk (look for the `cxi` mention in the tag).
 
 ## Contents
 
