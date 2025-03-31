@@ -4,4 +4,4 @@ Container image providing OpenMPI 5 with CUDA and CXI (i.e. HPE Slingshot) suppo
 
 Builds of the image are currently hosted on the Quay.io registry at https://quay.io/repository/ethcscs/ompi.
 
-Please refer to the CXI base container image for a more detailed overview of the software available in this image.
+Please refer to the communications framework (`comm-fwk`) container image for a more detailed overview of the software available in this image.

@@ -1,4 +1,4 @@
-FROM quay.io/ethcscs/cxi-base:20250305
+FROM quay.io/ethcscs/comm-fwk:cxi-ofi2.1-ucx1.18-cuda12.8
 
 ARG OMPI_VER=5.0.7
 RUN wget -q https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-${OMPI_VER}.tar.gz \

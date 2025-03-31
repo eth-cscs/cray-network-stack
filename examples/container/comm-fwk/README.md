@@ -1,4 +1,4 @@
-# CXI base container for HPE Slingshot connectivity
+# Communications framework image with HPE Slingshot connectivity
 
 This image provides foundational libraries and frameworks to build HPC software and applications with support for the HPE Slingshot high-speed network and CUDA GPUs.
 
@@ -6,7 +6,7 @@ Slingshot connectivity is enabled through user-space CXI software components, wh
 
 This image is not intended to be used on its own, but to serve as a base to build higher-level software (e.g. MPI implementations) and application stacks.
 
-Builds of the image are currently hosted on the Quay.io registry at https://quay.io/repository/ethcscs/cxi-base.
+Builds of the image are currently hosted on the Quay.io registry at https://quay.io/repository/ethcscs/comm-fwk.
 
 ## Contents
 
