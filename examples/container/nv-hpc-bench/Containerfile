@@ -1,4 +1,4 @@
-FROM docker.io/nvidia/cuda:12.8.0-devel-ubuntu24.04
+FROM docker.io/nvidia/cuda:12.8.1-devel-ubuntu24.04
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive \
@@ -32,7 +32,7 @@ RUN apt-get update \
         --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-ARG GDRCOPY_VER=2.4.4
+ARG GDRCOPY_VER=2.5
 RUN git clone --depth 1 --branch v${GDRCOPY_VER} https://github.com/NVIDIA/gdrcopy.git \
     && cd gdrcopy \
     && export CUDA_PATH=${CUDA_HOME:-$(echo $(which nvcc) | grep -o '.*cuda')} \
@@ -70,12 +70,9 @@ RUN git clone https://github.com/HewlettPackard/shs-libcxi.git \
     && rm -r shs-libcxi
 
 # Install libfabric
-ARG libfabric_version=2.0.0
-ARG libfabric_ref=c17230da527aada634e0cc50d9feafc83d7106ce
-# Libfabric 2.0.0 seems to have a bug preventing compilation of the CXI provider, using main branch for now
-RUN git clone --branch main --single-branch https://github.com/ofiwg/libfabric.git \
+ARG libfabric_version=2.1.0
+RUN git clone --branch v${libfabric_version} --depth 1 https://github.com/ofiwg/libfabric.git \
     && cd libfabric \
-    && git checkout ${libfabric_ref} \
     && ./autogen.sh \
     && ./configure --prefix=/usr --with-cuda=/usr/local/cuda --enable-cuda-dlopen --enable-gdrcopy-dlopen --enable-cxi --enable-lnx --enable-efa \
     && make -j$(nproc) \
