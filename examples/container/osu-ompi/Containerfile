@@ -9,6 +9,7 @@ RUN apt-get update \
         automake \
         autoconf \
         libtool \
+        cmake \
         gdb \
         strace \
         wget \
@@ -16,6 +17,7 @@ RUN apt-get update \
         bzip2 \
         python3 \
         rdma-core \
+        numactl \
         libconfig-dev \
         libuv1-dev \
         libfuse-dev \
@@ -79,12 +81,25 @@ RUN git clone --branch v${libfabric_version} --depth 1 https://github.com/ofiwg/
     && cd .. \
     && rm -rf libfabric
 
+# Install UCX
+ARG UCX_VERSION=1.18.0
+RUN wget https://github.com/openucx/ucx/releases/download/v${UCX_VERSION}/ucx-${UCX_VERSION}.tar.gz \
+    && tar xzf ucx-${UCX_VERSION}.tar.gz \
+    && cd ucx-${UCX_VERSION} \
+    && mkdir build \
+    && cd build \
+    && ../configure --prefix=/usr --with-cuda=/usr/local/cuda --with-gdrcopy=/usr/local --enable-mt --enable-devel-headers \
+    && make -j$(nproc) \
+    && make install \
+    && cd ../.. \
+    && rm -rf ucx-${UCX_VERSION}.tar.gz ucx-${UCX_VERSION}
+
 ARG OMPI_VER=5.0.7
-RUN wget -q  https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-${OMPI_VER}.tar.gz \
+RUN wget -q https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-${OMPI_VER}.tar.gz \
     && tar xf openmpi-${OMPI_VER}.tar.gz \
     && cd openmpi-${OMPI_VER} \
-    && ./configure --with-ofi=/usr --with-gdrcopy=/usr/local --prefix=/usr --with-cxi --with-slingshot \
-       --with-cuda=/usr/local/cuda --with-cuda-libdir=/usr/local/cuda/lib64/stubs \
+    && ./configure --prefix=/usr --with-ofi=/usr --with-ucx=/usr --enable-oshmem \
+        --with-cuda=/usr/local/cuda --with-cuda-libdir=/usr/local/cuda/lib64/stubs \
     && make -j$(nproc) \
     && make install \
     && ldconfig \
