@@ -1,4 +1,4 @@
-FROM quay.io/ethcscs/ompi:5.0.7
+FROM quay.io/ethcscs/ompi:5.0.7-cxi-ofi2.1-cuda12.8
 
 RUN wget -q http://mvapich.cse.ohio-state.edu/download/mvapich/osu-micro-benchmarks-7.5.tar.gz \
     && tar xf osu-micro-benchmarks-7.5.tar.gz \
