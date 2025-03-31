@@ -2,9 +2,14 @@
 
 Self-sufficient container image with OSU Micro-Benchmarks built on MPICH 4.2.1 with CUDA and CXI (i.e. HPE Slingshot) support.
 
+Builds of the image are currently hosted on the Quay.io registry at https://quay.io/repository/ethcscs/osu-mb (look for the `cxi` mention in the tag).
+
 ## Notes (see also EDF TOML for reference)
 - The image does not require hooks to inject a custom CXI stack from the host
 - The image includes also the libfabric LINKx provider for experimentation.
+- Two variants of the Containerfile are provided:
+    1. An extended one with explicit build instructions for all the software components besides CUDA.
+    2. A short one using other images from this Git repository as base, for a more modular approach.
 
 ## Examples
 
@@ -72,22 +77,68 @@ Self-sufficient container image with OSU Micro-Benchmarks built on MPICH 4.2.1 w
 4194304               825.47
 ```
 
+- All-to-all collective latency, 8 ranks over 2 nodes
+```
+[clariden][amadonna@clariden-ln002 ~]$ srun -N2 --ntasks-per-node=4 --mpi=pmi2 --environment=omb-cxi-mpich ./collective/osu_alltoall
+
+# OSU MPI All-to-All Personalized Exchange Latency Test v7.5
+# Datatype: MPI_CHAR.
+# Size       Avg Latency(us)
+1                      22.31
+2                      22.15
+4                      22.04
+8                      22.13
+16                     22.02
+32                     21.96
+64                     21.99
+128                    22.26
+256                    22.41
+512                    23.00
+1024                   23.99
+2048                   24.25
+4096                   25.56
+8192                   28.16
+16384                  66.81
+32768                  91.14
+65536                 182.75
+131072                303.41
+262144                522.80
+524288                961.68
+1048576              1824.77
+```
+
+- All-to-all collective latency with GPU buffers, 8 ranks over 2 nodes
+```
+[clariden][amadonna@clariden-ln002 ~]$ srun -N2 --ntasks-per-node=4 --mpi=pmi2 --environment=omb-cxi-mpich ./collective/osu_alltoall -d cuda
+
+# OSU MPI-CUDA All-to-All Personalized Exchange Latency Test v7.5
+# Datatype: MPI_CHAR.
+# Size       Avg Latency(us)
+1                     135.89
+2                     133.64
+4                     133.22
+8                     132.98
+16                    132.87
+32                    132.75
+64                    132.57
+128                   132.57
+256                   133.93
+512                   135.03
+1024                  137.20
+2048                  139.85
+4096                  144.11
+8192                  146.80
+16384                 170.30
+32768                 189.67
+65536                 207.48
+131072                238.45
+262144                302.85
+524288                438.77
+1048576               744.85
+```
+
 ## Known issues and limitations
 - The open source libfabric+CXI seems to be noticeably slower to detect CXI devices compared to the custom 1.15.x implementation provided by HPE. This results in longer startup times for jobs.
-- Collective tests don't work yet, e.g.
-  ```
-  [clariden][amadonna@clariden-ln001 ~]$ srun -N2 --ntasks-per-node=4 --mpi=pmi2 --environment=omb-cxi-mpich ./collective/osu_alltoall
-  Abort(73000719) on node 5: Fatal error in internal_Init: Other MPI error, error stack:
-  internal_Init(48306)..........: MPI_Init(argc=0xffffeba3326c, argv=0xffffeba33260) failed
-  MPII_Init_thread(265).........: 
-  MPIR_init_comm_world(34)......: 
-  MPIR_Comm_commit(800).........: 
-  MPIR_Comm_commit_internal(585): 
-  MPID_Comm_commit_pre_hook(151): 
-  MPIDI_world_pre_init(633).....: 
-  MPIDU_Init_shm_init(179)......: unable to allocate shared memory
-  ...
-  ```
 
 ## TODO
 
