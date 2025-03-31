@@ -108,15 +108,15 @@ RUN wget -q https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-${OMPI_V
     && rm -rf openmpi-${OMPI_VER}.tar.gz openmpi-${OMPI_VER}
 
 # Download pre-built benchmarks package
-RUN wget -q --progress=bar:force https://developer.download.nvidia.com/compute/nvidia-hpc-benchmarks/redist/nvidia_hpc_benchmarks_openmpi/linux-sbsa/nvidia_hpc_benchmarks_openmpi-linux-sbsa-24.09.02-archive.tar.xz \
-    && tar xf nvidia_hpc_benchmarks_openmpi-linux-sbsa-24.09.02-archive.tar.xz \
-    && mv nvidia_hpc_benchmarks_openmpi-linux-sbsa-24.09.02-archive nvidia_hpc_benchmarks \
-    && rm nvidia_hpc_benchmarks_openmpi-linux-sbsa-24.09.02-archive.tar.xz
+RUN wget -q --progress=bar:force https://developer.download.nvidia.com/compute/nvidia-hpc-benchmarks/redist/nvidia_hpc_benchmarks_openmpi/linux-sbsa/nvidia_hpc_benchmarks_openmpi-linux-sbsa-25.02.04-archive.tar.xz \
+    && tar xf nvidia_hpc_benchmarks_openmpi-linux-sbsa-25.02.04-archive.tar.xz \
+    && mv nvidia_hpc_benchmarks_openmpi-linux-sbsa-25.02.04-archive nvidia_hpc_benchmarks \
+    && rm nvidia_hpc_benchmarks_openmpi-linux-sbsa-25.02.04-archive.tar.xz
 
 # Build NVSHMEM from source
-RUN wget -q https://developer.download.nvidia.com/compute/redist/nvshmem/2.11.0/source/nvshmem_src_2.11.0-5.txz \
-    && tar -xvJf nvshmem_src_2.11.0-5.txz \
-    && cd nvshmem_src_2.11.0-5 \
+RUN wget -q https://developer.download.nvidia.com/compute/redist/nvshmem/3.2.5/source/nvshmem_src_3.2.5-1.txz \
+    && tar -xvf nvshmem_src_3.2.5-1.txz \
+    && cd nvshmem_src \
     && NVSHMEM_DEBUG=0 \
        NVSHMEM_DEVEL=0 \
        NVSHMEM_DEFAULT_PMI2=0 \
