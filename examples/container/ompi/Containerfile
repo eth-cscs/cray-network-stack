@@ -1,6 +1,6 @@
 FROM quay.io/ethcscs/comm-fwk:cxi-ofi2.1-ucx1.18-cuda12.8
 
-ARG OMPI_VER=5.0.7
+ARG OMPI_VER=5.0.8rc1
 RUN wget -q https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-${OMPI_VER}.tar.gz \
     && tar xf openmpi-${OMPI_VER}.tar.gz \
     && cd openmpi-${OMPI_VER} \
