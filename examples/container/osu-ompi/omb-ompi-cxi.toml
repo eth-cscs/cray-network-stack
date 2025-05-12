@@ -1,0 +1,15 @@
+image="/capstor/scratch/cscs/amadonna/omb-ompi-xpmem.sqsh"
+entrypoint=false
+
+[env]
+PMIX_MCA_psec="native"
+
+OMPI_MCA_btl="^tcp,ofi,vader,openib"
+OMPI_MCA_pml="cm"
+OMPI_MCA_mtl="ofi"
+OMPI_MCA_opal_common_ofi_provider_include="cxi"
+#FI_LOG_LEVEL="trace"
+FI_HMEM_CUDA_USE_GDRCOPY="1"
+
+[annotations]
+com.hooks.cxi.enabled="false"
