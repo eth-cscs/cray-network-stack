@@ -5,10 +5,15 @@ Self-sufficient container image with OSU Micro-Benchmarks built on OpenMPI 5 wit
 Builds of the image are currently hosted on the Quay.io registry at https://quay.io/repository/ethcscs/osu-mb (look for the `cxi` mention in the tag).
 
 ## Notes (see also EDF TOML for reference)
-- The image does not require hooks to inject a custom CXI stack from the host
+- This image is self-sufficient with respect to Slingshot connectivity, and does not require hooks to inject a custom CXI stack from the host.
 - Interaction with host PMIx needs to be understood better: environment variables for PSEC and GDS parameters have to be set on Alps to prevent warnings and crashes due to missing components
 - Running a container requires a hook for bridging the PMIx interface between host and container
 - The image includes also the libfabric LINKx provider for experimentation.
+- In order to run successfully with the LINKx provider and CUDA device buffers, the following are included:
+    - An experimental fix for CUDA GDR support in libfabric (more details [here](https://github.com/ofiwg/libfabric/issues/10865#issuecomment-2735866065)); the fix is applied on top of libfabric's `main` commit at the moment of writing (commit faf13301a4a9628b6c9a28a06d936258c6d368af), and the code is available from [this forked branch](https://github.com/Madeeks/libfabric/tree/cuda_gdrcopy_unregister_fix).
+    - OpenMPI 5.0.8RC1 to provide [this fix](https://github.com/open-mpi/ompi/pull/12290).
+- The libfabric EFA provider is included to leave open the possibility to experiment with derived images on AWS infrastructure as well.
+- Although only the libfabric framework and its CXI provider are required to support the Slingshot network, this image also packages the UCX communication framework to allow building a broader set of software (e.g. some OpenSHMEM implementations) and supporting optimized Infiniband communication as well.
 - Two variants of the Containerfile are provided:
     1. An extended one with explicit build instructions for all the software components besides CUDA.
     2. A short one using other images from this Git repository as base, for a more modular approach.
@@ -142,7 +147,3 @@ Builds of the image are currently hosted on the Quay.io registry at https://quay
 ## Known issues and limitations
 - The open source libfabric+CXI seems to be noticeably slower to detect CXI devices compared to the custom 1.15.x implementation provided by HPE. This results in longer startup times for jobs.
 
-
-## TODO
-
-- XPMEM support
