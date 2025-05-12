@@ -83,7 +83,8 @@ RUN git clone --branch ${libcxi_version} --depth 1 https://github.com/HewlettPac
 
 # Install libfabric
 ARG libfabric_version=2.1.0
-RUN git clone --branch v${libfabric_version} --depth 1 https://github.com/ofiwg/libfabric.git \
+#RUN git clone --branch v${libfabric_version} --depth 1 https://github.com/ofiwg/libfabric.git \
+RUN git clone --branch cuda_gdrcopy_unregister_fix --depth 1 https://github.com/Madeeks/libfabric.git \
     && cd libfabric \
     && ./autogen.sh \
     && ./configure --prefix=/usr --with-cuda=/usr/local/cuda --enable-cuda-dlopen --enable-gdrcopy-dlopen --enable-xpmem=/usr --enable-cxi --enable-lnx --enable-efa \
