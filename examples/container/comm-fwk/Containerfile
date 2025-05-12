@@ -63,18 +63,16 @@ RUN git clone https://github.com/HewlettPackard/shs-cassini-headers.git \
     && cd .. \
     && rm -r shs-cassini-headers
 
-ARG cxi_driver_ref=af5d2ed4114134ea4eaf095d16af619573729045
-RUN git clone https://github.com/HewlettPackard/shs-cxi-driver.git \
+ARG cxi_driver_version=release/shs-12.0.0
+RUN git clone --branch ${cxi_driver_version} --depth 1 https://github.com/HewlettPackard/shs-cxi-driver.git \
     && cd shs-cxi-driver \
-    && git checkout ${cxi_ddriver_ref} \
     && cp -r include/* /usr/include/ \
     && cd .. \
     && rm -r shs-cxi-driver
 
-ARG libcxi_ref=3a33b3966d2898ab129458c8813b0cbcdcec06f5
-RUN git clone https://github.com/HewlettPackard/shs-libcxi.git \
+ARG libcxi_version=release/shs-12.0.0
+RUN git clone --branch ${libcxi_version} --depth 1 https://github.com/HewlettPackard/shs-libcxi.git \
     && cd shs-libcxi \
-    && git checkout ${libcxi_ref} \
     && ./autogen.sh \
     && ./configure --prefix=/usr --with-cuda=/usr/local/cuda \
     && make -j$(nproc) \

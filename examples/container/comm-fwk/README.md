@@ -10,7 +10,7 @@ Builds of the image are currently hosted on the Quay.io registry at https://quay
 
 ## Contents
 
-- CUDA 12.8.1 (including other dependencies like CUDNN and NCCL from the NVIDIA Docker Hub image)
+- CUDA 12.8.1 (including other dependencies like NCCL from the NVIDIA Docker Hub image)
 - GDRCopy 2.5
 - XPMEM (commit 0d0bad4e1d07b38d53ecc8f20786bb1328c446da - corresponds to version 2.6.5-36 in Spack)
 - Libfabric 2.1.0 with the following providers explicitly enabled:
@@ -19,8 +19,8 @@ Builds of the image are currently hosted on the Quay.io registry at https://quay
     - LINKx
 - UCX 1.18.0
 - HPE Cassini headers (commit 9a8a738a879f007849fbc69be8e3487a4abf0952)
-- HPE CXI driver (commit af5d2ed4114134ea4eaf095d16af619573729045)
-- HPE libcxi (commit 3a33b3966d2898ab129458c8813b0cbcdcec06f5)
+- HPE CXI driver (tag `release/shs-12.0.0`)
+- HPE libcxi (tag `release/shs-12.0.0`)
 
 ## Notes
 
