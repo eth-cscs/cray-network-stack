@@ -12,6 +12,7 @@ Builds of the image are currently hosted on the Quay.io registry at https://quay
 
 - CUDA 12.8.1 (including other dependencies like CUDNN and NCCL from the NVIDIA Docker Hub image)
 - GDRCopy 2.5
+- XPMEM (commit 0d0bad4e1d07b38d53ecc8f20786bb1328c446da - corresponds to version 2.6.5-36 in Spack)
 - Libfabric 2.1.0 with the following providers explicitly enabled:
     - CXI
     - AWS EFA

@@ -32,6 +32,20 @@ RUN apt-get update \
         --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+# Install XPMEM
+# Use commit according to Spack package versioning rule:
+# https://github.com/spack/spack/blob/develop/var/spack/repos/spack_repo/builtin/packages/xpmem/package.py#L26
+ARG xpmem_ref=0d0bad4e1d07b38d53ecc8f20786bb1328c446da
+RUN git clone https://github.com/hpc/xpmem.git \
+    && cd xpmem \
+    && git checkout ${xpmem_ref} \
+    && ./autogen.sh \
+    && ./configure --prefix=/usr --with-default-prefix=/usr --disable-kernel-module \
+    && make -j$(nproc) \
+    && make install \
+    && cd .. \
+    && rm -r xpmem
+
 ARG GDRCOPY_VER=2.5
 RUN git clone --depth 1 --branch v${GDRCOPY_VER} https://github.com/NVIDIA/gdrcopy.git \
     && cd gdrcopy \
@@ -74,7 +88,7 @@ ARG libfabric_version=2.1.0
 RUN git clone --branch v${libfabric_version} --depth 1 https://github.com/ofiwg/libfabric.git \
     && cd libfabric \
     && ./autogen.sh \
-    && ./configure --prefix=/usr --with-cuda=/usr/local/cuda --enable-cuda-dlopen --enable-gdrcopy-dlopen --enable-cxi --enable-lnx --enable-efa \
+    && ./configure --prefix=/usr --with-cuda=/usr/local/cuda --enable-cuda-dlopen --enable-gdrcopy-dlopen --enable-xpmem=/usr --enable-cxi --enable-lnx --enable-efa \
     && make -j$(nproc) \
     && make install \
     && ldconfig \
