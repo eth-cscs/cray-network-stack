@@ -1,0 +1,11 @@
+image="/capstor/scratch/cscs/amadonna/quay.io+ethcscs+nccl-tests+2.16.4-cxi-ompi5.0.8-ofi2.1-cuda12.8.sqsh"
+entrypoint=false
+
+[env]
+PMIX_MCA_psec="native"
+FI_PROVIDER="cxi"
+
+[annotations]
+com.hooks.cxi.enabled="false"
+com.hooks.aws_ofi_nccl.enabled="1.14"
+com.hooks.aws_ofi_nccl.variant="cuda12"
