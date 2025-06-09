@@ -1,4 +1,4 @@
-image="/capstor/scratch/cscs/amadonna/omb-ompi-xpmem.sqsh"
+image="/capstor/scratch/cscs/amadonna/quay.io+ethcscs+osu-mb+7.5-ompi5.0.8-cxi-ofi2.1-cuda12.8.sqsh"
 entrypoint=false
 
 [env]
