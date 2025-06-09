@@ -1,5 +1,4 @@
-image="/capstor/scratch/cscs/amadonna/localhost+nv-hpc-bench.sqsh"
-writable=true
+image="/capstor/scratch/cscs/amadonna/quay.io+ethcscs+nv-hpc-benchmarks+25.04.01-cxi-ofi2.1-cuda12.8.sqsh"
 entrypoint=false
 
 [env]
@@ -12,9 +11,8 @@ NVSHMEM_BOOTSTRAP="MPI"
 NVSHMEM_BOOTSTRAP_PMI="PMIX"
 NVSHMEM_DISABLE_CUDA_VMM="1"
 
-
 [annotations]
 com.hooks.cxi.enabled="false"
-com.hooks.aws_ofi_nccl.enabled="amad"
+com.hooks.aws_ofi_nccl.enabled="1.14"
 com.hooks.aws_ofi_nccl.variant="cuda12"
 

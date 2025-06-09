@@ -1,16 +1,18 @@
-FROM quay.io/ethcscs/ompi:5.0.7-cxi-ofi2.1-cuda12.8
+FROM quay.io/ethcscs/ompi:5.0.8-cxi-ofi2.1-cuda12.8
 
 # Download pre-built benchmarks package
-RUN wget -q --progress=bar:force https://developer.download.nvidia.com/compute/nvidia-hpc-benchmarks/redist/nvidia_hpc_benchmarks_openmpi/linux-sbsa/nvidia_hpc_benchmarks_openmpi-linux-sbsa-25.02.04-archive.tar.xz \
-    && tar xf nvidia_hpc_benchmarks_openmpi-linux-sbsa-25.02.04-archive.tar.xz \
-    && mv nvidia_hpc_benchmarks_openmpi-linux-sbsa-25.02.04-archive nvidia_hpc_benchmarks \
-    && rm nvidia_hpc_benchmarks_openmpi-linux-sbsa-25.02.04-archive.tar.xz
+RUN wget -q --progress=bar:force https://developer.download.nvidia.com/compute/nvidia-hpc-benchmarks/redist/nvidia_hpc_benchmarks_openmpi/linux-sbsa/nvidia_hpc_benchmarks_openmpi-linux-sbsa-25.04.01-archive.tar.xz \
+    && tar xf nvidia_hpc_benchmarks_openmpi-linux-sbsa-25.04.01-archive.tar.xz \
+    && mv nvidia_hpc_benchmarks_openmpi-linux-sbsa-25.04.01-archive nvidia_hpc_benchmarks \
+    && rm nvidia_hpc_benchmarks_openmpi-linux-sbsa-25.04.01-archive.tar.xz
 
 # Build NVSHMEM from source
 RUN wget -q https://developer.download.nvidia.com/compute/redist/nvshmem/3.2.5/source/nvshmem_src_3.2.5-1.txz \
     && tar -xvf nvshmem_src_3.2.5-1.txz \
     && cd nvshmem_src \
-    && NVSHMEM_DEBUG=0 \
+    && NVSHMEM_BUILD_EXAMPLES=0 \
+       NVSHMEM_BUILD_TESTS=0 \
+       NVSHMEM_DEBUG=0 \
        NVSHMEM_DEVEL=0 \
        NVSHMEM_DEFAULT_PMI2=0 \
        NVSHMEM_DEFAULT_PMIX=0 \
