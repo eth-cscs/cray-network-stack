@@ -168,7 +168,7 @@ RUN set -eux; \
     ldconfig
 
 # -----------------------------------------------------------------------------
-# Remove HPC-X NCCL plugins (you want aws-ofi-nccl instead)
+# Remove HPC-X NCCL plugins
 # -----------------------------------------------------------------------------
 RUN set -eux; \
     rm -rf /opt/hpcx/nccl_mrc_plugin || true ; \
