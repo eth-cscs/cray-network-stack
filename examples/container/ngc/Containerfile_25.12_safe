@@ -316,7 +316,7 @@ RUN set -eux; \
 # -----------------------------------------------------------------------------
 # Install missing python packages
 # -----------------------------------------------------------------------------
-RUN python -m pip install flask-restful einops sentencepiece transformers tiktoken wandb
+RUN python -m pip install flask-restful einops sentencepiece transformers tiktoken wandb nvidia-modelopt[hf]
 
 # -----------------------------------------------------------------------------
 # Runtime environment defaults
