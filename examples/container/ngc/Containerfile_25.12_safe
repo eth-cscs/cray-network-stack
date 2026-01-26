@@ -1,0 +1,344 @@
+FROM nvcr.io/nvidia/pytorch:25.12-py3
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# -----------------------------------------------------------------------------
+# Base build deps
+# -----------------------------------------------------------------------------
+RUN set -eux; \
+    apt-get update; \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        pkg-config \
+        automake \
+        autoconf \
+        libtool \
+        cmake \
+        bc \
+        gdb \
+        strace \
+        wget \
+        curl \
+        git \
+        bzip2 \
+        python3 \
+        gfortran \
+        rdma-core \
+        numactl \
+        libconfig-dev \
+        libuv1-dev \
+        libfuse-dev \
+        libfuse3-dev \
+        libyaml-dev \
+        libnl-3-dev \
+        libnuma-dev \
+        libsensors-dev \
+        libcurl4-openssl-dev \
+        libjson-c-dev \
+        libibverbs-dev \
+        libsox-fmt-all \
+        # NCCL .deb build tooling
+        devscripts \
+        debhelper \
+        fakeroot \
+        dh-make \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+
+# -----------------------------------------------------------------------------
+# Remove AWS EFA user-space
+# -----------------------------------------------------------------------------
+RUN set -eux; \
+    rm -rf /opt/amazon/efa || true; \
+    # Remove any dynamic linker conf entries that reference EFA
+    grep -R "/opt/amazon/efa" -n /etc/ld.so.conf.d || true; \
+    for f in /etc/ld.so.conf.d/*; do \
+        [ -f "$f" ] || continue; \
+        if grep -q "/opt/amazon/efa" "$f"; then rm -f "$f"; fi; \
+    done; \
+    ldconfig
+
+# -----------------------------------------------------------------------------
+# XPMEM
+# -----------------------------------------------------------------------------
+ARG xpmem_ref=0d0bad4e1d07b38d53ecc8f20786bb1328c446da
+RUN set -eux; \
+    git clone https://github.com/hpc/xpmem.git; \
+    cd xpmem; \
+    git checkout "${xpmem_ref}"; \
+    ./autogen.sh; \
+    ./configure --prefix=/usr --with-default-prefix=/usr --disable-kernel-module; \
+    make -j"$(nproc)"; \
+    make install; \
+    cd /; \
+    rm -rf xpmem; \
+    ldconfig
+
+# -----------------------------------------------------------------------------
+# GDRCopy
+# -----------------------------------------------------------------------------
+ARG GDRCOPY_VER=2.5.1
+RUN set -eux; \
+    git clone --depth 1 --branch "v${GDRCOPY_VER}" https://github.com/NVIDIA/gdrcopy.git; \
+    cd gdrcopy; \
+    CUDA_PATH="${CUDA_HOME:-$(dirname "$(dirname "$(command -v nvcc)")")}" ; \
+    make CC=gcc CUDA="${CUDA_PATH}" lib -j"$(nproc)"; \
+    make lib_install; \
+    cd /; \
+    rm -rf gdrcopy; \
+    ldconfig
+
+# -----------------------------------------------------------------------------
+# Slingshot headers / CXI driver headers
+# -----------------------------------------------------------------------------
+ARG cassini_headers_version=release/shs-13.0.0
+RUN set -eux; \
+    git clone --depth 1 --branch "${cassini_headers_version}" https://github.com/HewlettPackard/shs-cassini-headers.git; \
+    cd shs-cassini-headers; \
+    cp -r include/* /usr/include/; \
+    cp -r share/* /usr/share/; \
+    cd /; \
+    rm -rf shs-cassini-headers
+
+ARG cxi_driver_version=release/shs-13.0.0
+RUN set -eux; \
+    git clone --depth 1 --branch "${cxi_driver_version}" https://github.com/HewlettPackard/shs-cxi-driver.git; \
+    cd shs-cxi-driver; \
+    cp -r include/* /usr/include/; \
+    cd /; \
+    rm -rf shs-cxi-driver
+
+# -----------------------------------------------------------------------------
+# libcxi
+# -----------------------------------------------------------------------------
+ARG libcxi_version=release/shs-13.0.0
+RUN set -eux; \
+    git clone --depth 1 --branch "${libcxi_version}" https://github.com/HewlettPackard/shs-libcxi.git; \
+    cd shs-libcxi; \
+    ./autogen.sh; \
+    ./configure --prefix=/usr --with-cuda=/usr/local/cuda; \
+    make -j"$(nproc)"; \
+    make install; \
+    cd /; \
+    rm -rf shs-libcxi; \
+    ldconfig
+
+# -----------------------------------------------------------------------------
+# libfabric (CXI provider enabled) + patch
+# -----------------------------------------------------------------------------
+ARG libfabric_commit=f8262817c337d615a1acceea6cd4ecb526ce548b
+RUN set -eux; \
+    git clone https://github.com/ofiwg/libfabric.git; \
+    cd libfabric; \
+    git reset --hard "${libfabric_commit}"; \
+    curl -fsSL \
+      "https://github.com/ofiwg/libfabric/compare/f8262817c337d615a1acceea6cd4ecb526ce548b...ryanhankins:fi_writemsg.patch?full_index=1" \
+      -o fi_writemsg.patch; \
+    git apply --check fi_writemsg.patch; \
+    git apply fi_writemsg.patch; \
+    ./autogen.sh; \
+    ./configure --prefix=/usr \
+      --with-cuda=/usr/local/cuda \
+      --enable-cuda-dlopen \
+      --enable-gdrcopy-dlopen \
+      --enable-xpmem=/usr \
+      --enable-cxi; \
+    make -j"$(nproc)"; \
+    make install; \
+    cd /; \
+    rm -rf libfabric; \
+    ldconfig
+
+# -----------------------------------------------------------------------------
+# NCCL from source, install as Debian package
+# -----------------------------------------------------------------------------
+COPY nccl/net.cc.patch /tmp/net.cc.patch
+RUN set -eux; \
+    NCCL_VER="$(python3 -c 'import ctypes; \
+lib=ctypes.CDLL("libnccl.so.2"); v=ctypes.c_int(); \
+rc=lib.ncclGetVersion(ctypes.byref(v)); \
+assert rc==0, rc; \
+maj=v.value//10000; min=(v.value%10000)//100; pat=v.value%10; \
+print(f"{maj}.{min}.{pat}")')"; \
+    echo "Detected NCCL runtime version: ${NCCL_VER}"; \
+    cd /tmp; \
+    git clone https://github.com/NVIDIA/nccl; \
+    cd nccl; \
+    git checkout "v${NCCL_VER}-1"; \
+    git apply --check /tmp/net.cc.patch; \
+    git apply /tmp/net.cc.patch; \
+    make -j"$(nproc)" pkg.debian.build CUDA_HOME=/usr/local/cuda; \
+    dpkg -i build/pkg/deb/*.deb; \
+    cd /; rm -rf /tmp/nccl* \
+    ldconfig
+
+# -----------------------------------------------------------------------------
+# Remove HPC-X NCCL plugins (you want aws-ofi-nccl instead)
+# -----------------------------------------------------------------------------
+RUN set -eux; \
+    rm -rf /opt/hpcx/nccl_mrc_plugin || true ; \
+    rm -rf /opt/hpcx/nccl_rdma_sharp_plugin || true ; \
+    rm -rf /opt/hpcx/nccl_spectrum-x_plugin || true ; \
+    rm -rf /opt/hpcx/sharp || true ; \
+    ldconfig
+
+# -----------------------------------------------------------------------------
+# UCX into /opt/hpcx/ucx
+# -----------------------------------------------------------------------------
+ARG UCX_VERSION=1.19.1
+RUN set -eux; \
+    HPCX=/opt/hpcx; \
+    CUDA=/usr/local/cuda; \
+    rm -rf "${HPCX}/ucx"; \
+    curl -fsSL "https://github.com/openucx/ucx/releases/download/v${UCX_VERSION}/ucx-${UCX_VERSION}.tar.gz" -o /tmp/ucx.tar.gz; \
+    tar -C /tmp -xzf /tmp/ucx.tar.gz; \
+    cd "/tmp/ucx-${UCX_VERSION}"; \
+    mkdir build; \
+    cd build; \
+    ../configure \
+      --prefix="${HPCX}/ucx" \
+      --with-cuda="${CUDA}" \
+      --with-gdrcopy=/usr/local \
+      --enable-mt \
+      --enable-devel-headers; \
+    make -j"$(nproc)"; \
+    make install; \
+    cd /; \
+    rm -rf "/tmp/ucx-${UCX_VERSION}" /tmp/ucx.tar.gz
+
+# -----------------------------------------------------------------------------
+# UCC into /opt/hpcx/ucc
+# -----------------------------------------------------------------------------
+ARG UCC_VERSION=1.6.0
+RUN set -eux; \
+    HPCX=/opt/hpcx; \
+    CUDA=/usr/local/cuda; \
+    rm -rf "${HPCX}/ucc"; \
+    git clone --depth 1 --branch "v${UCC_VERSION}" https://github.com/openucx/ucc.git /tmp/ucc; \
+    cd /tmp/ucc; \
+    ./autogen.sh; \
+    ./configure \
+      --prefix="${HPCX}/ucc" \
+      --with-ucx="${HPCX}/ucx" \
+      --with-cuda="${CUDA}" \
+      --with-nccl; \
+    make -j"$(nproc)"; \
+    make install; \
+    cd /; \
+    rm -rf /tmp/ucc
+
+# -----------------------------------------------------------------------------
+# Open MPI 5 into /opt/hpcx/ompi
+# -----------------------------------------------------------------------------
+ARG OMPI_VER=5.0.9
+RUN set -eux; \
+    HPCX=/opt/hpcx; \
+    CUDA=/usr/local/cuda; \
+    rm -rf "${HPCX}/ompi"; \
+    curl -fsSL "https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-${OMPI_VER}.tar.gz" -o /tmp/ompi.tar.gz; \
+    tar -C /tmp -xzf /tmp/ompi.tar.gz; \
+    cd "/tmp/openmpi-${OMPI_VER}"; \
+    ./configure \
+      --prefix="${HPCX}/ompi" \
+      --with-ofi=/usr \
+      --with-ucx="${HPCX}/ucx" \
+      --with-ucc="${HPCX}/ucc" \
+      --enable-oshmem \
+      --with-cuda="${CUDA}" \
+      --with-cuda-libdir="${CUDA}/lib64/stubs"; \
+    make -j"$(nproc)"; \
+    make install; \
+    cd /; \
+    rm -rf "/tmp/openmpi-${OMPI_VER}" /tmp/ompi.tar.gz; \
+    ldconfig
+
+# -----------------------------------------------------------------------------
+# aws-ofi-nccl + patch
+# -----------------------------------------------------------------------------
+ARG AWS_OFI_VER=1.18.0
+RUN set -eux; \
+    curl -fsSL "https://github.com/aws/aws-ofi-nccl/releases/download/v${AWS_OFI_VER}/aws-ofi-nccl-${AWS_OFI_VER}.tar.gz" -o /tmp/aws-ofi-nccl.tar.gz; \
+    tar -C /tmp -xzf /tmp/aws-ofi-nccl.tar.gz; \
+    cd /tmp/aws-ofi-nccl-1.18.0; \
+    ./autogen.sh; \
+    ./configure \
+      --prefix=/usr \
+      --with-libfabric=/usr \
+      --with-cuda=/usr/local/cuda \
+      --with-mpi=/opt/hpcx/ompi \
+      --with-hwloc=/opt/hpcx/ompi; \
+    # critical fix: remove /usr/include being injected as -isystem 
+    grep -R --line-number --fixed-string " -isystem /usr/include" . || true; \
+    find . -name 'Makefile' -o -name 'Makefile.in' | xargs sed -i 's| -isystem /usr/include||g'; \
+    make -j"$(nproc)"; \
+    make install; \
+    cd /; \
+    rm -rf /tmp/aws-ofi-nccl.tar.gz; /tmp/aws-ofi-nccl-${AWS_OFI_NCCL}; \
+    ldconfig
+
+# -----------------------------------------------------------------------------
+# nccl-tests (MPI-enabled)
+# -----------------------------------------------------------------------------
+ARG NCCL_TESTS_VER=2.17.8
+RUN set -eux; \
+    git clone --depth 1 --branch "v${NCCL_TESTS_VER}" https://github.com/NVIDIA/nccl-tests.git /tmp/nccl-tests; \
+    cd /tmp/nccl-tests; \
+    MPI=1 MPI_HOME=/opt/hpcx/ompi CUDA_HOME=/usr/local/cuda make -j"$(nproc)"; \
+    ls -1 build; \
+    # copy only executables (skip .o and directories)
+    install -d /usr/local/bin; \
+    find build -maxdepth 1 -type f -executable -name '*_perf' -print -exec install -m 0755 {} /usr/local/bin/ \; ; \
+    cd /; \
+    rm -rf /tmp/nccl-tests
+
+# -----------------------------------------------------------------------------
+# OSU microbenchmarks (MPI)
+# -----------------------------------------------------------------------------
+ARG OSU_VERSION=7.5.2
+RUN set -eux; \
+    curl -fsSL "http://mvapich.cse.ohio-state.edu/download/mvapich/osu-micro-benchmarks-${OSU_VERSION}.tar.gz" -o /tmp/osu.tar.gz; \
+    tar --no-same-owner --no-same-permissions -C /tmp -xzf /tmp/osu.tar.gz; \
+    cd "/tmp/osu-micro-benchmarks-${OSU_VERSION}"; \
+    ./configure \
+      --prefix=/usr/local \
+      CC=/opt/hpcx/ompi/bin/mpicc \
+      CFLAGS="-O3 -lcuda -lnvidia-ml" \
+      --enable-cuda \
+      --with-cuda-include=/usr/local/cuda/include \
+      --with-cuda-libpath=/usr/local/cuda/lib64; \
+    make -j"$(nproc)"; \
+    make install; \
+    cd /; \
+    rm -rf "/tmp/osu-micro-benchmarks-${OSU_VERSION}" /tmp/osu.tar.gz; \
+    ldconfig
+
+# -----------------------------------------------------------------------------
+# Install missing python packages
+# -----------------------------------------------------------------------------
+RUN python -m pip install flask-restful einops sentencepiece transformers tiktoken wandb
+
+# -----------------------------------------------------------------------------
+# Runtime environment defaults
+# -----------------------------------------------------------------------------
+ENV CUDA_CACHE_DISABLE="1" \
+    NCCL_VERSION="${NCCL_VER}" \
+    NCCL_NET="AWS Libfabric" \
+    NCCL_CROSS_NIC="1" \
+    NCCL_P2P_LEVEL="NVL" \
+    NCCL_NET_GDR_LEVEL="PHB" \
+    NCCL_NET_GDR_C2C="1" \
+    NCCL_NET_GDR_READ="1" \
+    NCCL_PROTO="^LL128" \
+    NCCL_NCHANNELS_PER_NET_PEER="4" \
+    FI_PROVIDER="cxi" \
+    FI_CXI_DEFAULT_CQ_SIZE="131072" \
+    FI_CXI_DEFAULT_TX_SIZE="32768" \
+    FI_CXI_DISABLE_HOST_REGISTER="1" \
+    FI_CXI_RX_MATCH_MODE="software" \
+    FI_MR_CACHE_MONITOR="userfaultfd" \
+    PMIX_MCA_psec="native" \
+    OMPI_MCA_btl="^tcp,ofi,vader" \
+    OMPI_MCA_pml="cm" \
+    OMPI_MCA_mtl="ofi" \
+    OMPI_MCA_opal_common_ofi_provider_include="cxi"
